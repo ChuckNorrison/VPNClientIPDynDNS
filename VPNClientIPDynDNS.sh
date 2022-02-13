@@ -31,6 +31,14 @@ done < "$vpnLogfile"
 
 # update duckdns DynDNS
 response=$(curl -sSL -w '%{http_code}' "https://nouser:$duckdns_token@www.duckdns.org/nic/update?hostname=$duckdns_host&myip=$pubIP&wildcard=NOCHG&mx=NOCHG&backmx=NOCHG")
-echo "$response"
+timestamp=$(date "+%d.%m.%Y %H:%M:%S")
+
+# log results
+logfile=dyndns.log
+if [ ! -f $logfile ]; then
+    touch $logfile
+fi
+
+echo "$timestamp: $response" >> $logfile
 
 exit 0
