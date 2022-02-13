@@ -10,9 +10,16 @@ vpnClient="client1"
 duckdns_token="12345"
 duckdns_host="myduckdns"
 
+# log results
+timestamp=$(date "+%d.%m.%Y %H:%M:%S")
+logfile=dyndns.log
+if [ ! -f $logfile ]; then
+    touch $logfile
+fi
+
 # check if vpn log file exists
 if [ ! -f $vpnStatusFile ]; then
-    echo "Error: VPN status file is missing!"
+    echo "$timestamp: Error: VPN status file is missing!" >> $logfile
     echo "Please update path to OpenVPN Server status.log file to find Client IPs"
     exit 1
 fi
@@ -21,7 +28,7 @@ fi
 while read -r line; do 
 
     if [ $(expr "$line" : "^$vpnClient,.*$") -gt 0 ]; then
-        #echo "DEBUG: VPN Client found: $line"
+        #echo "$timestamp: DEBUG: VPN Client found: $line" >> $logfile
         pubIP=$(echo "$line" | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
         echo "$vpnClient=$pubIP"
         continue
@@ -31,20 +38,12 @@ done < "$vpnStatusFile"
 
 # verify Public IP is set
 if [ -z "$pubIP" ]; then
-    echo "Error: Client not found!"
+    echo "$timestamp: Error: $vpnClient not found!" >> $logfile
     exit 1
 fi
 
 # update duckdns DynDNS
 response=$(curl -sSL -w '%{http_code}' "https://nouser:$duckdns_token@www.duckdns.org/nic/update?hostname=$duckdns_host&myip=$pubIP&wildcard=NOCHG&mx=NOCHG&backmx=NOCHG")
-timestamp=$(date "+%d.%m.%Y %H:%M:%S")
-
-# log results
-logfile=dyndns.log
-if [ ! -f $logfile ]; then
-    touch $logfile
-fi
-
 echo "$timestamp: $response" >> $logfile
 
 exit 0
