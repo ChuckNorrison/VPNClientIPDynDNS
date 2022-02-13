@@ -4,12 +4,6 @@
 # push public IP with DynDNS service
 # https://www.duckdns.org/
 
-# User defined variables
-vpnStatusFile="/var/log/openvpn/status.log"
-vpnClient="client1"
-duckdns_token="12345"
-duckdns_host="myduckdns"
-
 # log results
 timestamp=$(date "+%d.%m.%Y %H:%M:%S")
 logfile=dyndns.log
@@ -17,10 +11,27 @@ if [ ! -f $logfile ]; then
     touch $logfile
 fi
 
+# check config or create template
+if [ ! -f ./config.cfg ]; then
+    touch config.cfg
+    echo "$timestamp: Create config template" >> $logfile
+    echo "Please update your ./config.cfg"
+    echo vpnStatusFile="/var/log/openvpn/status.log" > ./config.cfg
+    echo vpnClient="client1" >> ./config.cfg
+    echo duckdns_token="12345" >> ./config.cfg
+    echo duckdns_host="myduckdns" >> ./config.cfg
+    cat $logfile
+    exit 1
+fi
+
+# include config
+. ./config.cfg
+
 # check if vpn log file exists
 if [ ! -f $vpnStatusFile ]; then
     echo "$timestamp: Error: VPN status file is missing!" >> $logfile
     echo "Please update path to OpenVPN Server status.log file to find Client IPs"
+    cat $logfile
     exit 1
 fi
 
@@ -39,6 +50,7 @@ done < "$vpnStatusFile"
 # verify Public IP is set
 if [ -z "$pubIP" ]; then
     echo "$timestamp: Error: $vpnClient not found!" >> $logfile
+    cat $logfile
     exit 1
 fi
 
